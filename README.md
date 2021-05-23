@@ -118,43 +118,164 @@ In this case, I have decided to make a new contract named `OwnerStorage`.
 
 Remeber, TDD means you write the tests first!
 
-So, let's create a test that checks that our contract doesn't error and can be deployed:
+So, let's create a test that does the bare minimum to check that our contract exists error and can be deployed.
+
+owner-storage.js
 
 ```
-const SimpleStorage = artifacts.require("SimpleStorage");
+const OwnerStorage = artifacts.require("OwnerStorage");
 
-contract("SimpleStorage", function (accounts) {
+contract("OwnerStorage", function (accounts) {
   describe("Initial deployment", async () => {
     it("should assert true", async function () {
-      await SimpleStorage.deployed();
+      await OwnerStorage.deployed();
       assert.isTrue(true);
     });
-
-    it("was deployed and it's intial value is 0", async () => {
-      // get subject
-      const ssInstance = await SimpleStorage.deployed();
-      // verify it starts with zero
-      const storedData = await ssInstance.getStoredData.call();
-      assert.equal(storedData, 0, `Initial state should be zero`);
-    });
   });
-  describe("Functionality", () => {
-    it("should store the value 42", async () => {
-      // get subject
-      const ssInstance = await SimpleStorage.deployed();
+```
 
-      // change the subject
-      await ssInstance.setStoredData(42, { from: accounts[0] });
+
+When we run this we should see an error that "OwnerStorage" does not exist, so let's make it!
+
+/contracts/OwnerStorage.sol
+```
+//SPDX-License-Identifier: MIT
+pragma solidity >=0.5.0 <0.8.0;
+
+contract OwnerStorage {
+
+
+}
+```
+
+## Describing The New Functionality
+
+Okay, now let's write a new test that describes our new functinality.
+
+Here I'll just look at two different users, the first and second account of our array created by truffle.
+
+Notice that this test is extremely similar to our SimpleStorage test!
+
+The only difference is that we are calling "setStoredData" twice, calling once as each of our users.
+
+Then we are reading the value for each user, and asserting that that are equal to 1 and 2, respectively.
+
+```
+describe("Functionality", () => {
+
+    it("should store a value for each user", async () => {
+
+      // get subject
+      const ownerStorage = await OwnerStorage.deployed();
+
+      // Set the values for the first three users to 1, 2 respectively.
+      await ownerStorage.setStoredData(1, { from: accounts[0] });
+      await ownerStorage.setStoredData(2, { from: accounts[1] });
+
+      // get the actual values now
+      const user1storedData = await ownerStorage.getStoredData.call({ from: accounts[0] });
+      const user2storedData = await ownerStorage.getStoredData.call({ from: accounts[1] });
 
       // verify we changed the subject
-      const storedData = await ssInstance.getStoredData.call();
-      assert.equal(storedData, 42, `${storedData} was not stored!`);
+      assert.equal(user1storedData, 1, `user1storedData: ${user1storedData} was not 1!`);
+      assert.equal(user2storedData, 2, `user1storedData: ${user2storedData} was not 2!`);
+
     });
-  });
+
 });
 ```
 
 
+Great! Looks like a nice test to me, so let's run it and look at the output:
+
+```
+ 4 passing (281ms)
+  1 failing
+
+  1) Contract: OwnerStorage
+       Functionality
+         should store a value for each user:
+     TypeError: ownerStorage.setStoredData is not a function
+      at Context.<anonymous> (test/owner-storage.js:19:26)
+      at processTicksAndRejections (internal/process/task_queues.js:95:5)
+```
+
+
+Right, I guess we'll need to add some functions into that OwnerStorage contract!
+
+We can have functions here with the same names as SimpleStorage, `getStoredData` and `setStoredData`.
+
+Let's just put some empty functions into our contract for now:
+
+```
+function getStoredData() public view returns (uint256) {
+
+}
+
+function setStoredData(uint256 x) public {
+
+}
+```
+
+Let's rerun the tests, and we can see they now fail for a new reason (hey, it's progress!)
+
+```
+ 4 passing (445ms)
+  1 failing
+
+  1) Contract: OwnerStorage
+       Functionality
+         should store a value for each user:
+     AssertionError: user1storedData: 0 was not 1!: expected <BN: 0> to equal 1
+      at Context.<anonymous> (test/owner-storage.js:27:14)
+      at processTicksAndRejections (internal/process/task_queues.js:95:5)
+
+```
+
+
+Ok, this is great. We have a really good test, and we're ready to implement code...
+
+BUT, seeing this 0 in the output just reminded we that we can write a test for the "zero condition" for OwnerStorage as well.
+
+All we have to not is _not_ set anything initially! We just go right into asserting that each user's value is 0.
+
+```
+it("should initialize each user's value to 0", async () => {
+
+  // get subject
+  const ownerStorage = await OwnerStorage.deployed();
+
+  // get the current values
+  const user1storedData = await ownerStorage.getStoredData.call({ from: accounts[0] });
+  const user2storedData = await ownerStorage.getStoredData.call({ from: accounts[1] });
+
+  // verify the values are zero
+  assert.equal(user1storedData, 0, `user1storedData inital value: ${user1storedData} was not 0!`);
+  assert.equal(user2storedData, 0, `user1storedData inital value: ${user2storedData} was not 0!`);
+
+});
+```
+
+This one passes now, but we'll also want to make sure it continuous to pass as we code out the real implmentation for our OwnerStorage functions.
+
+
+## Creating The Mapping
+
+Ok, _now_ we can actually get to writing the business logic of saving each user's value! 
+
+In Solidity we hav the keyword `mapping` to create our hashmap style data structure, but when defining it we need to be explicit about the type for our keys and values. 
+
+The values can be of type uint256 (just to be consistent with the original webinar 1 code), but what type do we use for for our user identifier? 🤔
+
+A key thing to remember is the global variable `msg` that we have access to, and the property we acre about here is called `sender`. 
+
+Feel free to play around with `msg.sender` in a separate _spike project._ You should see that Solidity uses a special type `address` to refer to this user's unique identifier, which is also just their wallet address.
+
+Phew, ok so after all that theory we have decided that we want to have a mapping of addresses to uints, and I'll name the mapping `UserToNumber`.
+
+```
+mapping (address -> uint256) UserToNumber;
+```
 
 
 
