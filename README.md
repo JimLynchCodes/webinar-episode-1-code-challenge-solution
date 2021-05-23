@@ -99,7 +99,7 @@ Okay! Now that we've gone over where we're starting from here, let's review what
 
 It's important to make sure you understand the behavior before you start coding. What I think they are asking for here is a mapping stored on the blockchain (similar to a hashmap in other languages) where the _keys_ are the id of the user calling "setStoredData", and the values of the mapping are the number which the user has last set his or user value to (with 0 as the default).
 
-Then we also want a "getCount" function which can only be called by the contract owner, and retur
+Then we also want a "getCount" function which can only be called by the contract owner, and this function should basically return the number of keys that are in our mapping.
 
 
 <br/>
@@ -116,7 +116,43 @@ In this case, I have decided to make a new contract named `OwnerStorage`.
 
 ## Creating New Files For Our New Contract 
 
+Remeber, TDD means you write the tests first!
 
+So, let's create a test that checks that our contract doesn't error and can be deployed:
+
+```
+const SimpleStorage = artifacts.require("SimpleStorage");
+
+contract("SimpleStorage", function (accounts) {
+  describe("Initial deployment", async () => {
+    it("should assert true", async function () {
+      await SimpleStorage.deployed();
+      assert.isTrue(true);
+    });
+
+    it("was deployed and it's intial value is 0", async () => {
+      // get subject
+      const ssInstance = await SimpleStorage.deployed();
+      // verify it starts with zero
+      const storedData = await ssInstance.getStoredData.call();
+      assert.equal(storedData, 0, `Initial state should be zero`);
+    });
+  });
+  describe("Functionality", () => {
+    it("should store the value 42", async () => {
+      // get subject
+      const ssInstance = await SimpleStorage.deployed();
+
+      // change the subject
+      await ssInstance.setStoredData(42, { from: accounts[0] });
+
+      // verify we changed the subject
+      const storedData = await ssInstance.getStoredData.call();
+      assert.equal(storedData, 42, `${storedData} was not stored!`);
+    });
+  });
+});
+```
 
 
 
