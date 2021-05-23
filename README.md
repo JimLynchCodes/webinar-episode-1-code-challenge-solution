@@ -1,4 +1,4 @@
-# Webinar Episode 1 Code Challenge Solutio
+# Webinar Episode 1 Code Challenge Solution
 
 This is my solution to the code challenge at the end of the code challenge at the end of the [REAMDE file](https://github.com/trufflesuite/webinar-episode-01) for the [Truffle Webinar](https://www.crowdcast.io/e/truffle-webinar-series-episode1).
 
