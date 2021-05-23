@@ -80,6 +80,12 @@ module.exports = function(deployer) {
 
 Okay! Now that we've gone over where we're starting from here, let's review what the code challenge wants us to do.
 
+<br/>
+
+
+
+
+
 
 <br/>
 
@@ -277,9 +283,162 @@ Phew, ok so after all that theory we have decided that we want to have a mapping
 mapping (address -> uint256) UserToNumber;
 ```
 
+Now, let's think about our functions. When we call "getStoredData" we want it to return the value within our mapping when we use `msg.sender` as the key.
 
+Written in Solidity, it should look something like this:
+```
+function getStoredData() public view returns (uint256) {
+    return UserToNumber[msg.sender];
+}
+```
+
+We can implement "getStoredData" with an extremely similar syntax. We use the "=" assignment operator to our function argument value into our mapping where the key is `msg.sender`.
+
+```
+function setStoredData(uint256 num) public {
+    UserToNumber[msg.sender] = num;
+}
+```
+
+Yep, that's it!
+
+Now let's run our tests again and see what happens:
+
+```
+ Contract: SimpleStorage
+    Initial deployment
+      ✓ should assert true
+      ✓ was deployed and it's intial value is 0 (40ms)
+    Functionality
+      ✓ should store the value 42 (96ms)
+
+  Contract: OwnerStorage
+    Initial deployment
+      ✓ should assert true
+    Functionality
+      ✓ should initialize each user's value to 0 (70ms)
+      ✓ should store a value for each user (170ms)
+
+
+  6 passing (504ms)
+
+```
+
+Woohoo! We're back to green! 🥳
+
+Feel free to take a break and dance around, and then let's tackle the "getCount" function! 
 
 <br/>
+
+
+
+## Tests For GetCount
+
+Ok, let's get right into it tdd style!
+
+When we call "getCount" as the owner, we want to get the user's count. Let's write a test where we get the count of two different users with a different number set. To keep things simple we'll just use the numbers 1 and 2.
+
+```
+it('should return the specified user\'s value when called by contract owner', () => {
+    // get subject
+    const ownerStorage = await OwnerStorage.deployed();
+
+    // Set the values for the first three users to 1, 2 respectively.
+    await ownerStorage.setStoredData(1, { from: accounts[0] });
+    await ownerStorage.setStoredData(2, { from: accounts[1] });
+
+    // gets the count of two users, called by contract owner
+    const user1storedData = await ownerStorage.getCount.call({ from: accounts[0] }, [accounts[0]]);
+    const user2storedData = await ownerStorage.getCount.call({ from: accounts[0] }, [accounts[1]]);
+
+    // verify we got the correct values
+    assert.equal(user1storedData, 1, `user1storedData: ${user1storedData} was not 1!`);
+    assert.equal(user2storedData, 2, `user1storedData: ${user2storedData} was not 2!`);
+})
+```
+
+We can write a similar test from the perpective of a non-owner user trying to call getCount. This is a bit tricky because we have to understand how Solidity likes these specific types of rejection errors to be thrown, and then we need to write a test which expects _that_ to happen...
+
+
+## Aside on Require
+
+
+Remember that Solidity functions actually _cost money_ in terms of ETH gas to run. If the user enters bad inputs or something weird happens, we can "revert" the transaction, in which case nothing is written to the blockchain and the caller's gas is refunded.
+
+With the `require` keyword we are able to say, "if this condition is not true, then make the function revert".
+
+Here's how we might require that the input of a function is equal to the string "foobar":
+
+```
+function (arg: string) puiblic {
+    
+    require(arg == "foobar");
+    
+    // do more things down here, safely assuming the arg is "foobar". 
+
+}
+```
+
+
+## Asserting The Revert
+
+In the final bullet of the code challenge they give us a hint- that there is a Truffle Assertion plugin that can test for revertions... nice!
+
+let's first install it in our project:
+```
+npm i truffle-assertions
+```
+
+
+Okay, now we can go back to testing our OwnerStorage "getCount" function in the case where it should revert.
+
+```
+const truffleAssert = require('truffle-assertions');
+
+it('should reject when called by a user who is not the contract owner', async () => {
+    // get subject
+    const ownerStorage = await OwnerStorage.deployed();
+
+    // a non-owner calling getCount for any user should revert
+    truffleAssert.reverts(ownerStorage.getCount.call({ from: accounts[1] }, [accounts[0]]));
+    truffleAssert.reverts(ownerStorage.getCount.call({ from: accounts[1] }, [accounts[1]]));
+})
+```
+
+
+Now let's run the tests, and since we haven't yet implemented getCount we'll see it fail saying it doesn't know what getCount is!
+```
+6 passing (815ms)
+  2 failing
+
+  1) Contract: OwnerStorage
+       Getting values for a specified address
+         should return the specified user's value when called by contract owner:
+     TypeError: Cannot read property 'call' of undefined
+      at Context.<anonymous> (test/owner-storage.js:61:61)
+      at processTicksAndRejections (internal/process/task_queues.js:95:5)
+
+  2) Contract: OwnerStorage
+       Getting values for a specified address
+         should reject when called by a user who is not the contract owner:
+     TypeError: Cannot read property 'call' of undefined
+      at Context.<anonymous> (test/owner-storage.js:81:53)
+      at processTicksAndRejections (internal/process/task_queues.js:95:5)
+ ```
+
+
+
+## Implenting GetCount
+
+
+
+## Adding An OwnerOnly Modifier
+
+
+
+
+
+
 
 
 ## Starting With Our Current Tests
@@ -293,15 +452,9 @@ In fact these two tests can be exactly the same for our OwnerStorage contract:
     - it has an initial value of 0 when first deployed.
     
     
-    
-    
-    
-    
-    
-    
 <br/>
 
-    
+
 ## Storing Values In A Mapping
    
 Note the last test we had in SimpleStorage, "it stores some positive integer".
