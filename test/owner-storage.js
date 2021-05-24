@@ -73,7 +73,7 @@ contract("OwnerStorage", function (accounts) {
 
         // a non-owner calling getCount for any user should revert
         await truffleAssert.reverts(ownerStorage.getCount.call(accounts[0], { from: accounts[1] }));
-        // truffleAssert.reverts(await ownerStorage.getCount.call(accounts[1], { from: accounts[2] }), expectedError);
+        await truffleAssert.reverts(ownerStorage.getCount.call(accounts[2], { from: accounts[2] }));
     })
 
   })
