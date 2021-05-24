@@ -440,7 +440,7 @@ We'll start by writing a test that calls getCount as a non-owner user and expect
 In the final bullet of the code challenge they give us a hint- that there is a Truffle Assertion plugin that can test for revertions... nice!
 
 let's first install it in our project:
-```
+```bash
 npm i truffle-assertions
 ```
 
@@ -484,7 +484,7 @@ I'll name this abstract contract "Ownable".
 
 
 Ownable.sol
-```
+```solidity
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 
@@ -502,7 +502,7 @@ abstract contract Ownable {
 Then, we can import this file in our OwnerStorage file and have our contract extend it / inherit from it with the `is` keyword.
 
 Snippet from OwnerStorage.sol:
-```
+```solidity
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 
@@ -518,7 +518,7 @@ Let's name the modifier "onlyOwner" and have it require that the values of `owne
 
 Don't forget the `_;` when writing Solidity modifiers!
 
-```
+```solidity
 modifier onlyOwner {
     require(msg.sender == _owner);
     _;
@@ -527,7 +527,7 @@ modifier onlyOwner {
 
 
 And finally, let's use this onlyOwner modifer on our getCount function.
-```
+```solidity
 function getCount(address _address) public view onlyOwner returns (uint256) {
 ```
 
