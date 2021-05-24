@@ -1,0 +1,23 @@
+{
+  "name": "webinar-episode-1-code-challenge-solution",
+  "version": "1.0.0",
+  "description": "This is my solution to the code challenge at the end of the code challenge at the end of the [REAMDE file](https://github.com/trufflesuite/webinar-episode-01) for the [Truffle Webinar](https://www.crowdcast.io/e/truffle-webinar-series-episode1).",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test",
+    "dev": "truffle develop"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JimLynchCodes/webinar-episode-1-code-challenge-solution.git"
+  },
+  "author": "Jim Lynch",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JimLynchCodes/webinar-episode-1-code-challenge-solution/issues"
+  },
+  "homepage": "https://github.com/JimLynchCodes/webinar-episode-1-code-challenge-solution#readme"
+}
