@@ -427,8 +427,41 @@ Now let's run the tests, and since we haven't yet implemented getCount we'll see
  ```
 
 
-
 ## Implenting GetCount
+
+Okay, so we have a test that it trying to invoke "call" on our getCount function, but since we haven't even defined that function our test is saying it's undefined. I guess that seems logical!
+
+So, let's create this function with a totally empty body and see what our test says.
+
+We'll also make it public so that it can be called from our tests and users:
+
+```
+function getCount() public returns (uint256) {
+
+}
+```
+
+The output when running our tests here is a bit obscure, but basically it's complaining that our function returns nothing when in our test we said it should return a uint.
+
+```
+  7 passing (944ms)
+  1 failing
+
+  1) Contract: OwnerStorage
+       Getting values for a specified address
+         should return the specified user's value when called by contract owner:
+     Error: Error: [number-to-bn] while converting number ["0x627306090abaB3A6e1400e9345bC60c78a8BEf57"] to BN.js instance, error: invalid number value. Value must be an integer, hex string, BN or BigNumber instance. Note, decimals are not supported. Given value: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
+      at Context.<anonymous> (test/owner-storage.js:61:61)
+      at processTicksAndRejections (internal/process/task_queues.js:95:5)
+```
+
+
+Okay, lets try to satify our test here by looking up our supplied argument in the mapping we have, and then returning that value.
+
+```
+
+
+```
 
 
 
