@@ -10,7 +10,7 @@ This is my solution to the code challenge at the end of the code challenge at th
 
 So, from episode 1 we have a Solidity contract called `SimpleStorage` with two functions, `getStoredData` and `setStoredData` which respectively read and write some unsigned integer to and from the blockchain.
 
-```
+```solidity
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 
@@ -35,7 +35,7 @@ We also have this nice JavaScript test file that verifies that our contract can 
 
 Here's the full code file:
 
-```
+```javascript
 const SimpleStorage = artifacts.require("SimpleStorage");
 
 contract("SimpleStorage", function (accounts) {
@@ -69,7 +69,7 @@ contract("SimpleStorage", function (accounts) {
 });
 ```
 
-We also have a migration file which we need to deploy to a local or network blockchain:
+And of course we have a migration file which is used  to deploy the contract to a blockchain, either running locally or on the blockchain:
 ```
 const SimpleStorage = artifacts.require("SimpleStorage");
 
@@ -79,11 +79,6 @@ module.exports = function(deployer) {
 ```
 
 Okay! Now that we've gone over where we're starting from here, let's review what the code challenge wants us to do.
-
-<br/>
-
-
-
 
 
 
@@ -103,9 +98,9 @@ Okay! Now that we've gone over where we're starting from here, let's review what
 
 ## Thinking About The Behavior
 
-It's important to make sure you understand the behavior before you start coding. What I think they are asking for here is a mapping stored on the blockchain (similar to a hashmap in other languages) where the _keys_ are the id of the user calling "setStoredData", and the values of the mapping are the number which the user has last set his or user value to (with 0 as the default).
+It's important to make sure you understand the behavior before you start coding. What I think they are asking for here (and I could be wrong to be honest) is a mapping (similar to a hashmap in other languages) that is stored on the blockchain where the _keys_ of our mapping are the unique id of the user calling "setStoredData", and the values of the mapping are the number which the user has last set his or user value to (with 0 as the default).
 
-Then we also want a "getCount" function which can only be called by the contract owner, and this function should basically return the number of keys that are in our mapping.
+Then we also want a "getCount" function which can only be called by the contract owner, and this function should accept a user id and return the current number associated with that user in our mapping (and use 0 as a default if the key doesn't exist in the mapping).
 
 
 <br/>
@@ -122,13 +117,13 @@ In this case, I have decided to make a new contract named `OwnerStorage`.
 
 ## Creating New Files For Our New Contract 
 
-Remeber, TDD means you write the tests first!
+Remeber, TDD means you **write the tests first!**
 
-So, let's create a test that does the bare minimum to check that our contract exists error and can be deployed.
+So, let's create a test that does the bare minimum to check that our contract exists, doesn't error, and can be deployed.
 
 owner-storage.js
 
-```
+```javascript
 const OwnerStorage = artifacts.require("OwnerStorage");
 
 contract("OwnerStorage", function (accounts) {
@@ -144,7 +139,7 @@ contract("OwnerStorage", function (accounts) {
 When we run this we should see an error that "OwnerStorage" does not exist, so let's make it!
 
 /contracts/OwnerStorage.sol
-```
+```solidity
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 
@@ -154,19 +149,24 @@ contract OwnerStorage {
 }
 ```
 
+
 ## Describing The New Functionality
 
-Okay, now let's write a new test that describes our new functinality.
+Okay, now let's write a test that describes our new functinality.
 
 Here I'll just look at two different users, the first and second account of our array created by truffle.
 
+_Keep in mind that Truffle by default makes the first user, accounts[0], the contract owner!_
+
+<br/>
+
 Notice that this test is extremely similar to our SimpleStorage test!
 
-The only difference is that we are calling "setStoredData" twice, calling once as each of our users.
+The only difference is that we are calling "setStoredData" twice, calling once as each of our users, setting the first user's number to 1 and the second user's number to 2.
 
 Then we are reading the value for each user, and asserting that that are equal to 1 and 2, respectively.
 
-```
+```javascript
 describe("Functionality", () => {
 
     it("should store a value for each user", async () => {
@@ -194,7 +194,7 @@ describe("Functionality", () => {
 
 Great! Looks like a nice test to me, so let's run it and look at the output:
 
-```
+```shell
  4 passing (281ms)
   1 failing
 
@@ -213,7 +213,7 @@ We can have functions here with the same names as SimpleStorage, `getStoredData`
 
 Let's just put some empty functions into our contract for now:
 
-```
+```solidity
 function getStoredData() public view returns (uint256) {
 
 }
@@ -223,7 +223,7 @@ function setStoredData(uint256 x) public {
 }
 ```
 
-Let's rerun the tests, and we can see they now fail for a new reason (hey, it's progress!)
+Then we rerun the tests, and we can see they now fail for a new reason. (hey, it's progress!)
 
 ```
  4 passing (445ms)
@@ -239,13 +239,16 @@ Let's rerun the tests, and we can see they now fail for a new reason (hey, it's 
 ```
 
 
-Ok, this is great. We have a really good test, and we're ready to implement code...
+Ok, this is great. We have a really good test now expecting the first user's number to be 1, and failing beacuse it got zero (since we haven't implmemented the functions yet). Notice that the initial value is not null, undefined, or some other weird thing- _it's just zero without us needing to code anything to initialize it to zero!_
 
-BUT, seeing this 0 in the output just reminded we that we can write a test for the "zero condition" for OwnerStorage as well.
+Notice how if we were not doing TDD we may have rushed into adding some initially unnecessary code, but beacuse we see this already it shows  up that we don't need to. Let's all take a second and reflect on how great and amazing test-driven development is... 🤩
+
+
+Also, seeing this 0 in the output just reminded we that we can and should write a test for the "zero condition" for OwnerStorage as well.
 
 All we have to not is _not_ set anything initially! We just go right into asserting that each user's value is 0.
 
-```
+```javascript
 it("should initialize each user's value to 0", async () => {
 
   // get subject
@@ -269,24 +272,26 @@ This one passes now, but we'll also want to make sure it continuous to pass as w
 
 Ok, _now_ we can actually get to writing the business logic of saving each user's value! 
 
-In Solidity we hav the keyword `mapping` to create our hashmap style data structure, but when defining it we need to be explicit about the type for our keys and values. 
+In Solidity we have the keyword `mapping` to create our hashmap style data structure, but when defining it we need to be explicit about the type for our keys and values. 
 
-The values can be of type uint256 (just to be consistent with the original webinar 1 code), but what type do we use for for our user identifier? 🤔
+The values can be of type uint256 (might as well be consistent with the original webinar 1 code), but what type do we use for for our user identifier? 🤔
 
-A key thing to remember is the global variable `msg` that we have access to, and the property we acre about here is called `sender`. 
+A key thing to remember is that in Solidity we have access to the global variable `msg`, and the handy property on it which can use here is called `sender`. 
 
 Feel free to play around with `msg.sender` in a separate _spike project._ You should see that Solidity uses a special type `address` to refer to this user's unique identifier, which is also just their wallet address.
 
+<br/>
+
 Phew, ok so after all that theory we have decided that we want to have a mapping of addresses to uints, and I'll name the mapping `UserToNumber`.
 
-```
+```solidity
 mapping (address -> uint256) UserToNumber;
 ```
 
 Now, let's think about our functions. When we call "getStoredData" we want it to return the value within our mapping when we use `msg.sender` as the key.
 
 Written in Solidity, it should look something like this:
-```
+```solidity
 function getStoredData() public view returns (uint256) {
     return UserToNumber[msg.sender];
 }
@@ -324,7 +329,7 @@ Now let's run our tests again and see what happens:
 
 ```
 
-Woohoo! We're back to green! 🥳
+Woohoo! We're all green! ✅ 🥳
 
 Feel free to take a break and dance around, and then let's tackle the "getCount" function! 
 
@@ -336,7 +341,7 @@ Feel free to take a break and dance around, and then let's tackle the "getCount"
 
 Ok, let's get right into it tdd style!
 
-When we call "getCount" as the owner, we want to get the user's count. Let's write a test where we get the count of two different users with a different number set. To keep things simple we'll just use the numbers 1 and 2.
+When we call "getCount" as the owner, we want to get the user's count. Let's write a test where we get the count of two different users who each have a different number assigned in the mapping. To keep things simple we'll just use the numbers 1 for the first user and 2 for the second user.
 
 ```
 it('should return the specified user\'s value when called by contract owner', async () => {
@@ -357,11 +362,40 @@ it('should return the specified user\'s value when called by contract owner', as
 })
 ```
 
-We can write a similar test from the perpective of a non-owner user trying to call getCount. This is a bit tricky because we have to understand how Solidity likes these specific types of rejection errors to be thrown, and then we need to write a test which expects _that_ to happen...
+Notice how when we actually call "getCount" in the test above, we do it "from: accounts[0]". In other words, we are invoking the function call _as the user owner (since the first account is the owner by default)._
+
+We can write a similar test from the perpective of a non-owner user trying to call getCount where we call the same getCount functions but "from: accounts[1]" (as a user who is _**not**_ the owner. 
+
+This failure test is also bit tricky because we have to assert that it was rejected / reverted. First we should understand how Solidity and Truffle like to throw and handle these error conditions, and then we need to write a test which expects _that_ to happen...
+
+<br/>
 
 
 
-## Implenting GetCount
+## Aside on Require
+
+
+Remember that Solidity functions actually _cost money_ in terms of ETH gas to run. If the user enters bad inputs or something weird happens, we can "revert" the transaction, in which case nothing is written to the blockchain and the caller's gas is refunded.
+
+With the `require` keyword we are able to say, "if this condition is not true, then make the function revert".
+
+Here's how we might require that the input of a function is equal to the string "foobar":
+
+```
+function (arg: string) puiblic {
+    
+    require(arg == "foobar");
+    
+    // do more things down here, safely assuming the arg is "foobar". 
+
+}
+```
+
+Now that we have an idea of what syntax tools we want to use, let's get back to just implementing the bare minimum in our getCount function in order to get _happy path_ test as the contract owner working.
+
+<br/>
+
+## Implenting GetCount 
 
 Okay, so we have a test that it trying to invoke "call" on our getCount function, but since we haven't even defined that function our test is saying it's undefined. I guess that seems logical!
 
@@ -369,7 +403,7 @@ So, let's create this function with a totally empty body and see what our test s
 
 We'll also make it public so that it can be called from our tests and users:
 
-```
+```solidity
 function getCount() public returns (uint256) {
 
 }
@@ -392,7 +426,7 @@ The output when running our tests here is a bit obscure, but basically it's comp
 
 Okay, lets try to satify our test here by looking up our supplied argument in the mapping we have, and then returning that value.
 
-```
+```solidity
 function getCount(address _address) public view returns (uint256) {
     return UserToNumber[_address];
 }
@@ -404,27 +438,8 @@ This is awesome, but we still have a bit left. Remember, we want this function t
 
 Currently the owner can call it, but everyone else can call it as well!
 
-We'll start by writing a test, but first let's review how the `require` keyword works in Solidity...  
+We'll start by writing a test that calls getCount as a non-owner user and expects it to revert...  
 
-
-## Aside on Require
-
-
-Remember that Solidity functions actually _cost money_ in terms of ETH gas to run. If the user enters bad inputs or something weird happens, we can "revert" the transaction, in which case nothing is written to the blockchain and the caller's gas is refunded.
-
-With the `require` keyword we are able to say, "if this condition is not true, then make the function revert".
-
-Here's how we might require that the input of a function is equal to the string "foobar":
-
-```
-function (arg: string) puiblic {
-    
-    require(arg == "foobar");
-    
-    // do more things down here, safely assuming the arg is "foobar". 
-
-}
-```
 
 
 ## Asserting The Revert
@@ -439,7 +454,10 @@ npm i truffle-assertions
 
 Okay, now we can go back to testing our OwnerStorage "getCount" function in the case where it should revert.
 
-```
+Note: don't forget to "await" the truffleAssert.reverts function call! 
+(Otherwise, your tests may pass when they shouldn't which would be very bad!)
+
+```javascript
 const truffleAssert = require('truffle-assertions');
 
 it('should reject when called by a user who is not the contract owner', async () => {
@@ -447,12 +465,10 @@ it('should reject when called by a user who is not the contract owner', async ()
     const ownerStorage = await OwnerStorage.deployed();
 
     // a non-owner calling getCount for any user should revert
-    truffleAssert.reverts(ownerStorage.getCount.call({ from: accounts[1] }, [accounts[0]]));
-    truffleAssert.reverts(ownerStorage.getCount.call({ from: accounts[1] }, [accounts[1]]));
+    await truffleAssert.reverts(ownerStorage.getCount.call({ from: accounts[1] }, [accounts[0]]));
+    await truffleAssert.reverts(ownerStorage.getCount.call({ from: accounts[1] }, [accounts[1]]));
 })
 ```
-
-(Strangely, this doesn't fail)
 
 
 But I guess we'll implement the modifier anyway!
