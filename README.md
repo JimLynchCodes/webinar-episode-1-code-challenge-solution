@@ -339,7 +339,7 @@ Ok, let's get right into it tdd style!
 When we call "getCount" as the owner, we want to get the user's count. Let's write a test where we get the count of two different users with a different number set. To keep things simple we'll just use the numbers 1 and 2.
 
 ```
-it('should return the specified user\'s value when called by contract owner', () => {
+it('should return the specified user\'s value when called by contract owner', async () => {
     // get subject
     const ownerStorage = await OwnerStorage.deployed();
 
@@ -347,17 +347,64 @@ it('should return the specified user\'s value when called by contract owner', ()
     await ownerStorage.setStoredData(1, { from: accounts[0] });
     await ownerStorage.setStoredData(2, { from: accounts[1] });
 
-    // gets the count of two users, called by contract owner
-    const user1storedData = await ownerStorage.getCount.call({ from: accounts[0] }, [accounts[0]]);
-    const user2storedData = await ownerStorage.getCount.call({ from: accounts[0] }, [accounts[1]]);
+    // get the actual values now
+    const user1storedData = await ownerStorage.getCount.call(accounts[0], { from: accounts[0] });
+    const user2storedData = await ownerStorage.getCount.call(accounts[1], { from: accounts[0] });
 
-    // verify we got the correct values
+    // verify we changed the subject
     assert.equal(user1storedData, 1, `user1storedData: ${user1storedData} was not 1!`);
     assert.equal(user2storedData, 2, `user1storedData: ${user2storedData} was not 2!`);
 })
 ```
 
 We can write a similar test from the perpective of a non-owner user trying to call getCount. This is a bit tricky because we have to understand how Solidity likes these specific types of rejection errors to be thrown, and then we need to write a test which expects _that_ to happen...
+
+
+
+## Implenting GetCount
+
+Okay, so we have a test that it trying to invoke "call" on our getCount function, but since we haven't even defined that function our test is saying it's undefined. I guess that seems logical!
+
+So, let's create this function with a totally empty body and see what our test says.
+
+We'll also make it public so that it can be called from our tests and users:
+
+```
+function getCount() public returns (uint256) {
+
+}
+```
+
+The output when running our tests here is a bit obscure, but basically it's complaining that our function returns nothing when in our test we said it should return a uint.
+
+```
+  7 passing (944ms)
+  1 failing
+
+  1) Contract: OwnerStorage
+       Getting values for a specified address
+         should return the specified user's value when called by contract owner:
+     Error: Error: [number-to-bn] while converting number ["0x627306090abaB3A6e1400e9345bC60c78a8BEf57"] to BN.js instance, error: invalid number value. Value must be an integer, hex string, BN or BigNumber instance. Note, decimals are not supported. Given value: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
+      at Context.<anonymous> (test/owner-storage.js:61:61)
+      at processTicksAndRejections (internal/process/task_queues.js:95:5)
+```
+
+
+Okay, lets try to satify our test here by looking up our supplied argument in the mapping we have, and then returning that value.
+
+```
+function getCount(address _address) public view returns (uint256) {
+    return UserToNumber[_address];
+}
+```
+
+Now when we run our tests... hey, they pass!
+
+This is awesome, but we still have a bit left. Remember, we want this function to ONLY be callable from the owner. 
+
+Currently the owner can call it, but everyone else can call it as well!
+
+We'll start by writing a test, but first let's review how the `require` keyword works in Solidity...  
 
 
 ## Aside on Require
@@ -405,63 +452,10 @@ it('should reject when called by a user who is not the contract owner', async ()
 })
 ```
 
-
-Now let's run the tests, and since we haven't yet implemented getCount we'll see it fail saying it doesn't know what getCount is!
-```
-6 passing (815ms)
-  2 failing
-
-  1) Contract: OwnerStorage
-       Getting values for a specified address
-         should return the specified user's value when called by contract owner:
-     TypeError: Cannot read property 'call' of undefined
-      at Context.<anonymous> (test/owner-storage.js:61:61)
-      at processTicksAndRejections (internal/process/task_queues.js:95:5)
-
-  2) Contract: OwnerStorage
-       Getting values for a specified address
-         should reject when called by a user who is not the contract owner:
-     TypeError: Cannot read property 'call' of undefined
-      at Context.<anonymous> (test/owner-storage.js:81:53)
-      at processTicksAndRejections (internal/process/task_queues.js:95:5)
- ```
+(Strangely, this doesn't fail)
 
 
-## Implenting GetCount
-
-Okay, so we have a test that it trying to invoke "call" on our getCount function, but since we haven't even defined that function our test is saying it's undefined. I guess that seems logical!
-
-So, let's create this function with a totally empty body and see what our test says.
-
-We'll also make it public so that it can be called from our tests and users:
-
-```
-function getCount() public returns (uint256) {
-
-}
-```
-
-The output when running our tests here is a bit obscure, but basically it's complaining that our function returns nothing when in our test we said it should return a uint.
-
-```
-  7 passing (944ms)
-  1 failing
-
-  1) Contract: OwnerStorage
-       Getting values for a specified address
-         should return the specified user's value when called by contract owner:
-     Error: Error: [number-to-bn] while converting number ["0x627306090abaB3A6e1400e9345bC60c78a8BEf57"] to BN.js instance, error: invalid number value. Value must be an integer, hex string, BN or BigNumber instance. Note, decimals are not supported. Given value: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
-      at Context.<anonymous> (test/owner-storage.js:61:61)
-      at processTicksAndRejections (internal/process/task_queues.js:95:5)
-```
-
-
-Okay, lets try to satify our test here by looking up our supplied argument in the mapping we have, and then returning that value.
-
-```
-
-
-```
+But I guess we'll implement the modifier anyway!
 
 
 
@@ -469,48 +463,86 @@ Okay, lets try to satify our test here by looking up our supplied argument in th
 
 
 
+Remeber, we have the global variable `msg.sender` to get the caller's addres.
+
+Unforunately, we don't have any global `owner` variable to get the owner's address.
+
+Not to worry, though!
+
+We can make an abstract contract that assigns an `_owner` variable to the value of `msg.sender` when the contract is first created (ie. in the constructor).
+
+I'll name this abstract contract "Ownable".
 
 
+Ownable.sol
+```
+//SPDX-License-Identifier: MIT
+pragma solidity >=0.5.0 <0.8.0;
 
-
-
-## Starting With Our Current Tests
-
-Many of the things that were true about our SimpleStorage contract are also true about OwnerStorage.
-
-In fact these two tests can be exactly the same for our OwnerStorage contract:
-
-
-    - it can be compiled and deployed with no errors.
-    - it has an initial value of 0 when first deployed.
+abstract contract Ownable {
     
-    
+    address _owner;
+
+    constructor() {
+      _owner = msg.sender;
+    }
+
+}
+```
+
+Then, we can import this file in our OwnerStorage file and have our contract extend it / inherit from it with the `is` keyword.
+
+Snippet from OwnerStorage.sol:
+```
+//SPDX-License-Identifier: MIT
+pragma solidity >=0.5.0 <0.8.0;
+
+import "./Ownable.sol";
+
+contract OwnerStorage is Ownable {
+```
+
+
+Ok, so now that we have "_owner" available to use our modifier is actually pretty compact and straightforward.
+
+Let's name the modifier "onlyOwner" and have it require that the values of `owner` and `msg.sender` are equal:
+
+Don't forget the `_;` when writing Solidity modifiers!
+
+```
+modifier onlyOwner {
+    require(msg.sender == _owner);
+    _;
+}
+```
+
+
+And finally, let's use this onlyOwner modifer on our getCount function.
+```
+function getCount(address _address) public view onlyOwner returns (uint256) {
+```
+
+Now, when we run our tests we should see all beautifully green checkmarks, giving us the confidence that our code works correctly and the freedom to refactor without fear of unexpectedly breaking things. Yay!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <br/>
 
-
-## Storing Values In A Mapping
-   
-Note the last test we had in SimpleStorage, "it stores some positive integer".
-
-Things are a bit more nuanced with our new desired behavior in OwnerStorage- we want users to be able to store _their own_ values rather than everyone overwriting the one, global number.
-
-So, I'm going to start
-
-
-
-
-
-
-
-
-
-
-
-<br/>
-
-
-
-## Building The GetCount Function
 
 
 
