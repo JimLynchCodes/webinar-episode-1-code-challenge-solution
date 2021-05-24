@@ -195,7 +195,7 @@ describe("Functionality", () => {
 Great! Looks like a nice test to me, so let's run it and look at the output:
 
 ```shell
- 4 passing (281ms)
+ 1 passing (281ms)
   1 failing
 
   1) Contract: OwnerStorage
@@ -226,7 +226,7 @@ function setStoredData(uint256 x) public {
 Then we rerun the tests, and we can see they now fail for a new reason. (hey, it's progress!)
 
 ```
- 4 passing (445ms)
+ 1 passing (445ms)
   1 failing
 
   1) Contract: OwnerStorage
@@ -310,13 +310,6 @@ Yep, that's it!
 Now let's run our tests again and see what happens:
 
 ```
- Contract: SimpleStorage
-    Initial deployment
-      ✓ should assert true
-      ✓ was deployed and it's intial value is 0 (40ms)
-    Functionality
-      ✓ should store the value 42 (96ms)
-
   Contract: OwnerStorage
     Initial deployment
       ✓ should assert true
@@ -325,7 +318,7 @@ Now let's run our tests again and see what happens:
       ✓ should store a value for each user (170ms)
 
 
-  6 passing (504ms)
+  3 passing (504ms)
 
 ```
 
@@ -412,7 +405,7 @@ function getCount() public returns (uint256) {
 The output when running our tests here is a bit obscure, but basically it's complaining that our function returns nothing when in our test we said it should return a uint.
 
 ```
-  7 passing (944ms)
+  4 passing (944ms)
   1 failing
 
   1) Contract: OwnerStorage
@@ -542,25 +535,18 @@ Now, when we run our tests we should see all beautifully green checkmarks, givin
 
 
 ```
- Contract: SimpleStorage
-    Initial deployment
-      ✓ should assert true
-      ✓ was deployed and it's intial value is 0 (50ms)
-    Functionality
-      ✓ should store the value 42 (104ms)
-
   Contract: OwnerStorage
     Initial deployment
       ✓ should assert true
     Getting And Setting Values
-      ✓ should initialize each user's value to 0 (116ms)
-      ✓ should store a value for each user (187ms)
+      ✓ should initialize each user's value to 0 (76ms)
+      ✓ should store a value for each user (203ms)
     Getting values for a specified address
-      ✓ should return the specified user's value when called by contract owner (213ms)
-      ✓ should reject when called by a user who is not the contract owner (469ms)
+      ✓ should return the specified user's value when called by contract owner (197ms)
+      ✓ should reject when called by a user who is not the contract owner (446ms)
 
 
-  8 passing (1s)
+  5 passing (1s)
 ```
 
 Huzzah, we've completed the code challenge. Our tests are all passing and asserting the right things, so I guess we're done!
