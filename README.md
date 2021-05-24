@@ -541,27 +541,32 @@ function getCount(address _address) public view onlyOwner returns (uint256) {
 Now, when we run our tests we should see all beautifully green checkmarks, giving us the confidence that our code works correctly and the freedom to refactor without fear of unexpectedly breaking things. Yay!
 
 
+```
+ Contract: SimpleStorage
+    Initial deployment
+      ✓ should assert true
+      ✓ was deployed and it's intial value is 0 (50ms)
+    Functionality
+      ✓ should store the value 42 (104ms)
+
+  Contract: OwnerStorage
+    Initial deployment
+      ✓ should assert true
+    Getting And Setting Values
+      ✓ should initialize each user's value to 0 (116ms)
+      ✓ should store a value for each user (187ms)
+    Getting values for a specified address
+      ✓ should return the specified user's value when called by contract owner (213ms)
+      ✓ should reject when called by a user who is not the contract owner (469ms)
 
 
+  8 passing (1s)
+```
+
+Huzzah, we've completed the code challenge. Our tests are all passing and asserting the right things, so I guess we're done!
 
 
-
-
-
-
-
-
-
-
-
-
-
+See you next time for more TDD Solidity coding! bye! 👋
 
 <br/>
-
-
-
-
-
-
 
