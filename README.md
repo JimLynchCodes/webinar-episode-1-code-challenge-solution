@@ -336,7 +336,7 @@ Ok, let's get right into it tdd style!
 
 When we call "getCount" as the owner, we want to get the user's count. Let's write a test where we get the count of two different users who each have a different number assigned in the mapping. To keep things simple we'll just use the numbers 1 for the first user and 2 for the second user.
 
-```
+```javascript
 it('should return the specified user\'s value when called by contract owner', async () => {
     // get subject
     const ownerStorage = await OwnerStorage.deployed();
@@ -374,8 +374,8 @@ With the `require` keyword we are able to say, "if this condition is not true, t
 
 Here's how we might require that the input of a function is equal to the string "foobar":
 
-```
-function (arg: string) puiblic {
+```solidity
+function (arg: string) public {
     
     require(arg == "foobar");
     
