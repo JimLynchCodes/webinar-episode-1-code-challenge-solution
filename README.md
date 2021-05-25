@@ -552,7 +552,7 @@ Now, when we run our tests we should see all beautifully green checkmarks, givin
 Huzzah, we've completed the code challenge. Our tests are all passing and asserting the right things, so I guess we're done!
 
 
-See you next time for more TDD Solidity coding! bye! 👋
+See you next time for more TDD Solidity coding! bye for now! 👋
 
 <br/>
 
