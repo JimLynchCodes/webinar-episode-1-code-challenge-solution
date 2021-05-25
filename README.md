@@ -267,6 +267,7 @@ it("should initialize each user's value to 0", async () => {
 
 This one passes now, but we'll also want to make sure it continuous to pass as we code out the real implmentation for our OwnerStorage functions.
 
+<br/>
 
 ## Creating The Mapping
 
@@ -433,7 +434,7 @@ Currently the owner can call it, but everyone else can call it as well!
 
 We'll start by writing a test that calls getCount as a non-owner user and expects it to revert...  
 
-
+<br/>
 
 ## Asserting The Revert
 
@@ -466,6 +467,8 @@ it('should reject when called by a user who is not the contract owner', async ()
 
 But I guess we'll implement the modifier anyway!
 
+
+<br/>
 
 
 ## Adding An OwnerOnly Modifier
@@ -552,7 +555,7 @@ Now, when we run our tests we should see all beautifully green checkmarks, givin
 Huzzah, we've completed the code challenge. Our tests are all passing and asserting the right things, so I guess we're done!
 
 
-See you next time for more TDD Solidity coding! bye for now! 👋
+See you next time for more TDD Solidity coding! Bye bye for now! 👋
 
 <br/>
 
